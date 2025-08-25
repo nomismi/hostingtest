@@ -1,0 +1,1273 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>이미지 캡션 검수 도구</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #4a5568;
+            font-size: 2.2em;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .controls {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            min-width: 200px;
+        }
+
+        .control-group label {
+            font-weight: 600;
+            color: #4a5568;
+            font-size: 0.9em;
+        }
+
+        select, input[type="file"] {
+            padding: 10px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        select:focus, input[type="file"]:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .load-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            align-self: flex-end;
+        }
+
+        .load-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .progress-info {
+            background: white;
+            border-radius: 15px;
+            padding: 15px 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .progress-bar {
+            flex: 1;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            margin: 0 20px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #48bb78, #38a169);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .reviewer-info {
+            color: #4a5568;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .clickable-name {
+            cursor: pointer;
+            border-bottom: 1px dashed #4a5568;
+            transition: all 0.3s ease;
+        }
+
+        .clickable-name:hover {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .change-name-btn {
+            background: none;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 4px 8px;
+            cursor: pointer;
+            font-size: 12px;
+            color: #4a5568;
+            transition: all 0.3s ease;
+        }
+
+        .change-name-btn:hover {
+            background: #f8fafc;
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 20px;
+            min-height: 600px;
+        }
+
+        .left-panel {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .image-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 2px dashed #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            min-height: 400px;
+        }
+
+        .image-container.has-image {
+            border: none;
+            padding: 0;
+        }
+
+        .preview-image {
+            max-width: 100%;
+            max-height: 400px;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .placeholder-text {
+            color: #a0aec0;
+            font-size: 1.1em;
+            text-align: center;
+        }
+
+        .caption-section {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .caption-section h3 {
+            color: #4a5568;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .caption-text {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 15px;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #2d3748;
+            min-height: 80px;
+        }
+
+        .right-panel {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .feedback-form h3 {
+            color: #4a5568;
+            margin-bottom: 20px;
+            font-size: 1.3em;
+            text-align: center;
+        }
+
+        .evaluation-section {
+            margin-bottom: 25px;
+        }
+
+        .evaluation-section h4 {
+            color: #4a5568;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+        }
+
+        .quality-check {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .checkbox-option {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .checkbox-option:hover {
+            border-color: #667eea;
+            background: #f8fafc;
+        }
+
+        .checkbox-option.selected {
+            border-color: #48bb78;
+            background: linear-gradient(135deg, rgba(72, 187, 120, 0.1), rgba(56, 161, 105, 0.1));
+        }
+
+        .checkbox-option input[type="checkbox"] {
+            margin-right: 12px;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .checkbox-option label {
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 16px;
+        }
+
+        .comment-section textarea {
+            width: 100%;
+            min-height: 300px;
+            padding: 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            line-height: 1.6;
+            resize: vertical;
+            transition: border-color 0.3s ease;
+            font-family: inherit;
+        }
+
+        .comment-section textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-actions {
+            margin-top: auto;
+            padding-top: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .save-btn {
+            background: linear-gradient(135deg, #48bb78, #38a169);
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .save-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .export-btn {
+            background: linear-gradient(135deg, #ed8936, #dd6b20);
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .export-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .save-status {
+            text-align: center;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .save-status.success {
+            background: #c6f6d5;
+            color: #276749;
+        }
+
+        .save-status.error {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+
+        .name-modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .name-modal-content h2 {
+            color: #4a5568;
+            margin-bottom: 25px;
+            font-size: 1.5em;
+        }
+
+        .name-modal-content input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 16px;
+            margin-bottom: 25px;
+            text-align: center;
+            box-sizing: border-box;
+        }
+
+        .name-modal-content input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .name-modal-content button {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            width: 100%;
+        }
+
+        .name-modal-content button:hover {
+            transform: translateY(-2px);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* Navigation Controls */
+        .navigation-controls {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .current-image-info {
+            font-weight: 600;
+            color: #4a5568;
+            font-size: 1.1em;
+        }
+
+        .excel-btn {
+            background: linear-gradient(135deg, #38a169, #2f855a);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            font-size: 14px;
+        }
+
+        .excel-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .excel-btn:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .nav-center {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .nav-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            font-size: 14px;
+            min-width: 100px;
+        }
+
+        .nav-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+        }
+
+        .nav-btn:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .nav-btn#list-btn {
+            background: linear-gradient(135deg, #ed8936, #dd6b20);
+        }
+
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            .right-panel {
+                order: -1;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .control-group {
+                min-width: auto;
+            }
+            
+            .navigation-controls {
+                flex-direction: column;
+                gap: 15px;
+                align-items: stretch;
+            }
+            
+            .nav-left, .nav-center {
+                justify-content: center;
+            }
+            
+            .nav-center {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Name Input Modal -->
+    <div class="modal-overlay hidden" id="name-input-modal">
+        <div class="name-modal-content">
+            <h2>🙋 검토자 정보 입력</h2>
+            <input type="text" id="reviewer-name-input" placeholder="예: 홍길동" autofocus>
+            <button id="start-review-btn">✅ 검토 시작하기</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🖼️ 이미지 캡션 검수 도구</h1>
+            <p>이미지와 캡션의 정확성을 검토하고 피드백을 제공하세요</p>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls">
+            <div class="control-group">
+                <label for="folder-input">📁 데이터 폴더 선택</label>
+                <input type="file" id="folder-input" webkitdirectory directory multiple title="데이터 폴더 선택" aria-label="데이터 폴더 선택">
+            </div>
+            <div class="control-group">
+                <label for="project-select">📂 프로젝트 선택</label>
+                <select id="project-select" disabled>
+                    <option value="">먼저 폴더를 선택하세요</option>
+                </select>
+            </div>
+            <button class="load-btn" id="load-data-btn" disabled>📋 데이터 로드</button>
+        </div>
+
+        <!-- Progress Info -->
+        <div class="progress-info">
+            <div class="reviewer-info">
+                <span>👤 검토자: <span id="reviewer-name-display" class="clickable-name" title="클릭하여 이름 변경">-</span></span>
+                <button class="change-name-btn" id="change-name-btn" title="검토자 이름 변경">✏️</button>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+            <div class="progress-text">
+                <span id="progress-text">0 / 0 완료 (0%)</span>
+            </div>
+        </div>
+
+        <!-- Navigation Controls -->
+        <div class="navigation-controls" id="navigation-controls" style="display: none;">
+            <div class="nav-left">
+                <span class="current-image-info" id="current-image-info">이미지 정보</span>
+                <button class="excel-btn" id="open-excel-btn">📊 원본 개발 자료 열기</button>
+            </div>
+            <div class="nav-center">
+                <button class="nav-btn" id="prev-btn" disabled>⬅️ 이전</button>
+                <button class="nav-btn" id="list-btn">📋 목록</button>
+                <button class="nav-btn" id="next-btn" disabled>다음 ➡️</button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Left Panel - Image and Caption -->
+            <div class="left-panel">
+                <div class="image-container" id="image-container">
+                    <div class="placeholder-text">
+                        <p>🖼️ 이미지가 여기에 표시됩니다</p>
+                        <p>먼저 데이터를 로드하고 이미지를 선택하세요</p>
+                    </div>
+                </div>
+
+                <div class="caption-section">
+                    <h3>📝 이미지 캡션</h3>
+                    <div class="caption-text" id="caption-text">
+                        캡션이 여기에 표시됩니다...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel - Feedback Form -->
+            <div class="right-panel">
+                <div class="feedback-form">
+                    <h3>📋 캡션 검수</h3>
+
+                    <div class="evaluation-section">
+                        <div class="quality-check">
+                            <div class="checkbox-option">
+                                <input type="checkbox" id="no-issues" name="quality-check">
+                                <label for="no-issues">✅ 품질 문제 없음 (캡션이 완벽함)</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="comment-section">
+                        <h4>캡션 수정 및 보완 제안</h4>
+                        <textarea id="feedback-comment" placeholder="이미지 캡션에 대한 정보를 추가 보완, 수정 등을 포함하여 이미지에 대한 상세한 설명을 작성해주세요. 기존 캡션을 참고하여 더 정확하고 완성도 높은 캡션으로 새롭게 작성하시거나 필요한 수정사항을 구체적으로 제안해주세요."></textarea>
+                    </div>
+
+                    <div class="form-actions">
+                        <button class="save-btn" id="save-feedback-btn">💾 피드백 저장</button>
+                        <button class="export-btn" id="export-results-btn">📤 결과 내보내기</button>
+                        <div class="save-status hidden" id="save-status"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class ImageCaptionReviewer {
+            constructor() {
+                this.reviewerName = '';
+                this.projects = new Map();
+                this.currentProject = '';
+                this.currentImage = '';
+                this.currentImageList = [];
+                this.currentImageIndex = -1;
+                this.feedbackData = new Map();
+                this.init();
+            }
+
+            init() {
+                this.checkReviewerName();
+                this.bindEvents();
+                this.loadSavedData();
+            }
+
+            checkReviewerName() {
+                const savedName = localStorage.getItem('reviewer_name_images');
+                if (savedName) {
+                    this.reviewerName = savedName;
+                    document.getElementById('reviewer-name-display').textContent = savedName;
+                } else {
+                    this.showNameInputModal();
+                }
+            }
+
+            showNameInputModal() {
+                const modal = document.getElementById('name-input-modal');
+                modal.classList.remove('hidden');
+                
+                const nameInput = document.getElementById('reviewer-name-input');
+                const startBtn = document.getElementById('start-review-btn');
+
+                startBtn.onclick = () => {
+                    const name = nameInput.value.trim();
+                    if (name) {
+                        this.saveReviewerName(name);
+                        modal.classList.add('hidden');
+                    } else {
+                        alert('이름을 입력해주세요.');
+                        nameInput.focus();
+                    }
+                };
+
+                nameInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        startBtn.click();
+                    }
+                });
+            }
+
+            saveReviewerName(name) {
+                this.reviewerName = name;
+                localStorage.setItem('reviewer_name_images', name);
+                document.getElementById('reviewer-name-display').textContent = name;
+            }
+
+            changeReviewerName() {
+                const currentName = this.reviewerName;
+                const newName = prompt('검토자 이름을 변경하세요:', currentName);
+                
+                if (newName && newName.trim() && newName.trim() !== currentName) {
+                    const confirmChange = confirm(`검토자 이름을 "${currentName}"에서 "${newName.trim()}"으로 변경하시겠습니까?\n\n주의: 이미 저장된 피드백의 검토자 이름도 모두 변경됩니다.`);
+                    
+                    if (confirmChange) {
+                        const oldName = this.reviewerName;
+                        const trimmedNewName = newName.trim();
+                        
+                        // 현재 검토자 이름 변경
+                        this.saveReviewerName(trimmedNewName);
+                        
+                        // 기존 피드백 데이터의 검토자 이름도 일괄 변경
+                        this.updateExistingFeedbackReviewerName(oldName, trimmedNewName);
+                        
+                        alert(`검토자 이름이 "${trimmedNewName}"으로 변경되었습니다.`);
+                    }
+                }
+            }
+
+            updateExistingFeedbackReviewerName(oldName, newName) {
+                this.feedbackData.forEach((feedback, key) => {
+                    if (feedback.reviewer === oldName) {
+                        feedback.reviewer = newName;
+                    }
+                });
+                
+                // 로컬 스토리지에 업데이트된 데이터 저장
+                this.saveToLocalStorage();
+            }
+
+            bindEvents() {
+                document.getElementById('folder-input').addEventListener('change', (e) => {
+                    this.handleFolderSelection(e);
+                });
+
+                document.getElementById('project-select').addEventListener('change', (e) => {
+                    this.handleProjectSelection(e);
+                });
+
+                document.getElementById('load-data-btn').addEventListener('click', () => {
+                    this.loadProjectData();
+                });
+
+                // Navigation buttons
+                document.getElementById('prev-btn').addEventListener('click', () => {
+                    this.navigateToPrevious();
+                });
+
+                document.getElementById('next-btn').addEventListener('click', () => {
+                    this.navigateToNext();
+                });
+
+                document.getElementById('list-btn').addEventListener('click', () => {
+                    this.showImageList();
+                });
+
+                document.getElementById('open-excel-btn').addEventListener('click', () => {
+                    this.openExcelFile();
+                });
+
+                // Name change handlers
+                document.getElementById('reviewer-name-display').addEventListener('click', () => {
+                    this.changeReviewerName();
+                });
+
+                document.getElementById('change-name-btn').addEventListener('click', () => {
+                    this.changeReviewerName();
+                });
+
+                document.getElementById('save-feedback-btn').addEventListener('click', () => {
+                    this.saveFeedback();
+                });
+
+                document.getElementById('export-results-btn').addEventListener('click', () => {
+                    this.exportResults();
+                });
+
+                // Checkbox option selection
+                const checkboxOption = document.querySelector('.checkbox-option');
+                checkboxOption.addEventListener('click', () => {
+                    const checkbox = checkboxOption.querySelector('input[type="checkbox"]');
+                    checkbox.checked = !checkbox.checked;
+                    this.updateCheckboxSelection();
+                });
+
+                // Auto-save on input changes
+                document.getElementById('feedback-comment').addEventListener('input', () => {
+                    this.autoSave();
+                });
+
+                document.getElementById('no-issues').addEventListener('change', () => {
+                    this.updateCheckboxSelection();
+                    this.autoSave();
+                });
+            }
+
+            handleFolderSelection(event) {
+                const files = Array.from(event.target.files);
+                this.projects.clear();
+
+                // Group files by project folder - 유연한 구조 처리
+                files.forEach(file => {
+                    const pathParts = file.webkitRelativePath.split('/');
+                    const fileName = pathParts[pathParts.length - 1];
+                    
+                    // gemma_captions_revised.txt 파일을 찾아서 프로젝트 구조 파악
+                    let projectName = '';
+                    
+                    if (pathParts.length === 2) {
+                        // 직접 구조: 프로젝트1/파일
+                        projectName = pathParts[0];
+                    } else if (pathParts.length >= 3) {
+                        // 중첩 구조: 사용자_데이터/프로젝트1/파일
+                        // gemma_captions_revised.txt가 있는 폴더를 프로젝트 폴더로 인식
+                        if (fileName === 'gemma_captions_revised.txt') {
+                            projectName = pathParts[pathParts.length - 2]; // 파일 바로 위 폴더
+                        } else {
+                            // 다른 파일들은 같은 레벨에서 gemma_captions_revised.txt를 찾아서 매칭
+                            const projectFolderIndex = pathParts.length - 2;
+                            projectName = pathParts[projectFolderIndex];
+                        }
+                    }
+
+                    if (projectName) {
+                        if (!this.projects.has(projectName)) {
+                            this.projects.set(projectName, {
+                                images: new Map(),
+                                captions: new Map(),
+                                captionFile: null,
+                                excelFile: null
+                            });
+                        }
+
+                        const project = this.projects.get(projectName);
+
+                        if (fileName === 'gemma_captions_revised.txt') {
+                            project.captionFile = file;
+                        } else if (fileName.endsWith('.png')) {
+                            const imageKey = fileName.replace('.png', '');
+                            project.images.set(imageKey, file);
+                        } else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+                            project.excelFile = file;
+                        }
+                    }
+                });
+
+                this.populateProjectSelect();
+            }
+
+            populateProjectSelect() {
+                const projectSelect = document.getElementById('project-select');
+                projectSelect.innerHTML = '<option value="">프로젝트를 선택하세요</option>';
+
+                this.projects.forEach((project, projectName) => {
+                    const option = document.createElement('option');
+                    option.value = projectName;
+                    option.textContent = projectName;
+                    projectSelect.appendChild(option);
+                });
+
+                projectSelect.disabled = false;
+            }
+
+            async handleProjectSelection(event) {
+                const projectName = event.target.value;
+                this.currentProject = projectName;
+
+                if (!projectName) {
+                    document.getElementById('load-data-btn').disabled = true;
+                    document.getElementById('navigation-controls').style.display = 'none';
+                    return;
+                }
+
+                const project = this.projects.get(projectName);
+                
+                // Load captions
+                if (project.captionFile) {
+                    try {
+                        const captionText = await this.readTextFile(project.captionFile);
+                        this.parseCaptions(captionText, project);
+                    } catch (error) {
+                        console.error('캡션 파일 읽기 오류:', error);
+                        alert('캡션 파일을 읽는 중 오류가 발생했습니다.');
+                        return;
+                    }
+                }
+
+                // Prepare image list
+                this.prepareImageList(project);
+                document.getElementById('load-data-btn').disabled = false;
+            }
+
+            readTextFile(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => resolve(e.target.result);
+                    reader.onerror = (e) => reject(e);
+                    reader.readAsText(file, 'utf-8');
+                });
+            }
+
+            parseCaptions(captionText, project) {
+                const lines = captionText.split('\n');
+                
+                lines.forEach(line => {
+                    const colonIndex = line.indexOf(':');
+                    if (colonIndex > 0) {
+                        const fileName = line.substring(0, colonIndex).trim();
+                        const caption = line.substring(colonIndex + 1).trim();
+                        const imageKey = fileName.replace('.png', '');
+                        project.captions.set(imageKey, caption);
+                    }
+                });
+            }
+
+            prepareImageList(project) {
+                // Sort image keys naturally
+                this.currentImageList = Array.from(project.images.keys()).sort((a, b) => {
+                    const aMatch = a.match(/p(\d+)_img(\d+)/);
+                    const bMatch = b.match(/p(\d+)_img(\d+)/);
+                    
+                    if (aMatch && bMatch) {
+                        const aPage = parseInt(aMatch[1]);
+                        const bPage = parseInt(bMatch[1]);
+                        const aImg = parseInt(aMatch[2]);
+                        const bImg = parseInt(bMatch[2]);
+                        
+                        if (aPage !== bPage) return aPage - bPage;
+                        return aImg - bImg;
+                    }
+                    
+                    return a.localeCompare(b);
+                });
+            }
+
+            async loadProjectData() {
+                if (!this.currentProject) {
+                    alert('프로젝트를 선택해주세요.');
+                    return;
+                }
+
+                if (this.currentImageList.length === 0) {
+                    alert('이미지가 없습니다.');
+                    return;
+                }
+
+                // Load first image
+                this.currentImageIndex = 0;
+                this.currentImage = this.currentImageList[0];
+                await this.loadCurrentImage();
+
+                // Show navigation controls
+                document.getElementById('navigation-controls').style.display = 'flex';
+                this.updateNavigationButtons();
+            }
+
+            async loadCurrentImage() {
+                if (!this.currentProject || !this.currentImage) {
+                    return;
+                }
+
+                const project = this.projects.get(this.currentProject);
+                const imageFile = project.images.get(this.currentImage);
+                const caption = project.captions.get(this.currentImage);
+
+                if (!imageFile) {
+                    alert('선택한 이미지 파일을 찾을 수 없습니다.');
+                    return;
+                }
+
+                // Display image
+                const imageContainer = document.getElementById('image-container');
+                imageContainer.innerHTML = '';
+                imageContainer.classList.add('has-image');
+
+                const img = document.createElement('img');
+                img.className = 'preview-image';
+                img.alt = this.currentImage;
+                
+                const imageUrl = URL.createObjectURL(imageFile);
+                img.src = imageUrl;
+                
+                imageContainer.appendChild(img);
+
+                // Display caption
+                const captionText = document.getElementById('caption-text');
+                captionText.textContent = caption || '캡션을 찾을 수 없습니다.';
+
+                // Update current image info
+                this.updateCurrentImageInfo();
+
+                // Load saved feedback
+                this.loadFeedbackForCurrentItem();
+                this.updateProgress();
+                this.updateNavigationButtons();
+            }
+
+            updateCurrentImageInfo() {
+                const info = `${this.currentImage}.png (${this.currentImageIndex + 1}/${this.currentImageList.length})`;
+                document.getElementById('current-image-info').textContent = info;
+            }
+
+            updateNavigationButtons() {
+                const prevBtn = document.getElementById('prev-btn');
+                const nextBtn = document.getElementById('next-btn');
+                const excelBtn = document.getElementById('open-excel-btn');
+
+                prevBtn.disabled = this.currentImageIndex <= 0;
+                nextBtn.disabled = this.currentImageIndex >= this.currentImageList.length - 1;
+                
+                const project = this.projects.get(this.currentProject);
+                excelBtn.disabled = !project || !project.excelFile;
+            }
+
+            async navigateToPrevious() {
+                if (this.currentImageIndex > 0) {
+                    this.currentImageIndex--;
+                    this.currentImage = this.currentImageList[this.currentImageIndex];
+                    await this.loadCurrentImage();
+                }
+            }
+
+            async navigateToNext() {
+                if (this.currentImageIndex < this.currentImageList.length - 1) {
+                    this.currentImageIndex++;
+                    this.currentImage = this.currentImageList[this.currentImageIndex];
+                    await this.loadCurrentImage();
+                }
+            }
+
+            showImageList() {
+                const imageList = this.currentImageList.map((imageKey, index) => {
+                    const feedbackKey = `${this.currentProject}::${imageKey}`;
+                    const feedback = this.feedbackData.get(feedbackKey);
+                    const status = feedback && feedback.completed ? '✅' : '⏳';
+                    return `${index + 1}. ${status} ${imageKey}.png`;
+                }).join('\n');
+
+                const selectedIndex = prompt(
+                    `이미지 목록:\n\n${imageList}\n\n이동할 이미지 번호를 입력하세요 (1-${this.currentImageList.length}):`,
+                    (this.currentImageIndex + 1).toString()
+                );
+
+                if (selectedIndex) {
+                    const index = parseInt(selectedIndex) - 1;
+                    if (index >= 0 && index < this.currentImageList.length) {
+                        this.currentImageIndex = index;
+                        this.currentImage = this.currentImageList[index];
+                        this.loadCurrentImage();
+                    } else {
+                        alert('올바른 번호를 입력해주세요.');
+                    }
+                }
+            }
+
+            openExcelFile() {
+                const project = this.projects.get(this.currentProject);
+                if (!project || !project.excelFile) {
+                    alert('엑셀 파일을 찾을 수 없습니다.');
+                    return;
+                }
+
+                // Create a temporary URL and trigger download
+                const url = URL.createObjectURL(project.excelFile);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = project.excelFile.name;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+
+            loadFeedbackForCurrentItem() {
+                const feedbackKey = `${this.currentProject}::${this.currentImage}`;
+                const savedFeedback = this.feedbackData.get(feedbackKey);
+
+                if (savedFeedback) {
+                    // Load checkbox
+                    document.getElementById('no-issues').checked = savedFeedback.noIssues || false;
+                    this.updateCheckboxSelection();
+
+                    // Load comment
+                    document.getElementById('feedback-comment').value = savedFeedback.comment || '';
+                } else {
+                    // Clear form
+                    document.getElementById('no-issues').checked = false;
+                    document.getElementById('feedback-comment').value = '';
+                    this.updateCheckboxSelection();
+                }
+            }
+
+            updateCheckboxSelection() {
+                const checkboxOption = document.querySelector('.checkbox-option');
+                const checkbox = checkboxOption.querySelector('input[type="checkbox"]');
+                
+                if (checkbox.checked) {
+                    checkboxOption.classList.add('selected');
+                    // 품질 문제 없음 체크 시 텍스트 영역 비우기 (선택사항)
+                    // document.getElementById('feedback-comment').value = '';
+                } else {
+                    checkboxOption.classList.remove('selected');
+                }
+            }
+
+            saveFeedback() {
+                if (!this.currentProject || !this.currentImage) {
+                    this.showSaveStatus('프로젝트와 이미지를 선택해주세요.', 'error');
+                    return;
+                }
+
+                const noIssues = document.getElementById('no-issues').checked;
+                const comment = document.getElementById('feedback-comment').value.trim();
+
+                // 피드백 완료 기준: 품질 문제 없음 체크 OR 수정 제안 작성
+                if (!noIssues && !comment) {
+                    this.showSaveStatus('품질 문제 없음을 체크하거나 수정 제안을 작성해주세요.', 'error');
+                    return;
+                }
+
+                const feedbackKey = `${this.currentProject}::${this.currentImage}`;
+                const feedbackData = {
+                    project: this.currentProject,
+                    image: this.currentImage,
+                    noIssues: noIssues,
+                    comment: comment,
+                    reviewer: this.reviewerName,
+                    timestamp: new Date().toISOString(),
+                    completed: true  // 완료 기준 충족
+                };
+
+                this.feedbackData.set(feedbackKey, feedbackData);
+                this.saveToLocalStorage();
+                this.updateProgress();
+                this.showSaveStatus('피드백이 저장되었습니다.', 'success');
+            }
+
+            autoSave() {
+                if (!this.currentProject || !this.currentImage) return;
+
+                const noIssues = document.getElementById('no-issues').checked;
+                const comment = document.getElementById('feedback-comment').value.trim();
+
+                if (noIssues || comment) {
+                    const feedbackKey = `${this.currentProject}::${this.currentImage}`;
+                    const feedbackData = {
+                        project: this.currentProject,
+                        image: this.currentImage,
+                        noIssues: noIssues,
+                        comment: comment,
+                        reviewer: this.reviewerName,
+                        timestamp: new Date().toISOString(),
+                        completed: noIssues || (comment.length > 0)  // 완료 기준
+                    };
+
+                    this.feedbackData.set(feedbackKey, feedbackData);
+                    this.saveToLocalStorage();
+                }
+            }
+
+            saveToLocalStorage() {
+                const dataToSave = Array.from(this.feedbackData.entries()).map(([key, value]) => [key, value]);
+                localStorage.setItem('image_caption_feedback', JSON.stringify(dataToSave));
+            }
+
+            loadSavedData() {
+                const savedData = localStorage.getItem('image_caption_feedback');
+                if (savedData) {
+                    try {
+                        const parsedData = JSON.parse(savedData);
+                        this.feedbackData = new Map(parsedData);
+                    } catch (error) {
+                        console.error('저장된 데이터 로드 오류:', error);
+                    }
+                }
+            }
+
+            updateProgress() {
+                if (!this.currentProject) return;
+
+                const project = this.projects.get(this.currentProject);
+                if (!project) return;
+
+                const totalImages = project.images.size;
+                let completedCount = 0;
+
+                project.images.forEach((file, imageKey) => {
+                    const feedbackKey = `${this.currentProject}::${imageKey}`;
+                    const feedback = this.feedbackData.get(feedbackKey);
+                    if (feedback && feedback.completed) {
+                        completedCount++;
+                    }
+                });
+
+                const progressPercent = totalImages > 0 ? Math.round((completedCount / totalImages) * 100) : 0;
+                
+                document.getElementById('progress-fill').style.width = `${progressPercent}%`;
+                document.getElementById('progress-text').textContent = `${completedCount} / ${totalImages} 완료 (${progressPercent}%)`;
+            }
+
+            exportResults() {
+                if (this.feedbackData.size === 0) {
+                    alert('내보낼 피드백 데이터가 없습니다.');
+                    return;
+                }
+
+                const results = {
+                    reviewer: this.reviewerName,
+                    exportDate: new Date().toISOString(),
+                    totalFeedbacks: this.feedbackData.size,
+                    feedbacks: Array.from(this.feedbackData.values())
+                };
+
+                const blob = new Blob([JSON.stringify(results, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${this.reviewerName}_image_caption_results_${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                this.showSaveStatus('결과가 성공적으로 내보내졌습니다.', 'success');
+            }
+
+            showSaveStatus(message, type) {
+                const statusElement = document.getElementById('save-status');
+                statusElement.textContent = message;
+                statusElement.className = `save-status ${type}`;
+                statusElement.classList.remove('hidden');
+
+                setTimeout(() => {
+                    statusElement.classList.add('hidden');
+                }, 3000);
+            }
+        }
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', () => {
+            new ImageCaptionReviewer();
+        });
+    </script>
+</body>
+</html>
